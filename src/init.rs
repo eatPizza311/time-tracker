@@ -1,9 +1,7 @@
 //! Application setup
 
-use clap_verbosity_flag::Verbosity;
 use error_stack::{fmt::ColorMode, Report};
 use owo_colors::OwoColorize;
-use tracing_log::AsTrace;
 use tracing_subscriber::EnvFilter;
 
 use crate::error::Suggestion;
