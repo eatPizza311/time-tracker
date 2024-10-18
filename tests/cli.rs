@@ -1,4 +1,4 @@
-use assert_cmd::{cargo::CommandCargoExt, Command};
+use assert_cmd::Command;
 use testresult::TestResult;
 
 #[test]
@@ -12,6 +12,8 @@ fn start_command_starts_tracking_time() -> TestResult {
     Command::cargo_bin("track")?.arg("start").assert().success();
 
     todo!("");
+
+    #[allow(unreachable_code)]
     Ok(())
 }
 
@@ -21,6 +23,8 @@ fn stop_command_stop_tracking_time() -> TestResult {
     Command::cargo_bin("track")?.arg("stop").assert().success();
 
     todo!("");
+
+    #[allow(unreachable_code)]
     Ok(())
 }
 
