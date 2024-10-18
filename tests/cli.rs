@@ -2,7 +2,7 @@ use assert_cmd::Command;
 use testresult::TestResult;
 
 #[test]
-fn status_code_is_error_if_no_commend_specified() -> TestResult {
+fn status_code_is_error_if_no_command_specified() -> TestResult {
     Command::cargo_bin("track")?.assert().failure();
     Ok(())
 }
