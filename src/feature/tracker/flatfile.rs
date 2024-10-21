@@ -19,11 +19,6 @@ use crate::feature::tracker::{EndTime, StartTime, TimeRecord};
 #[error("filesystem tracker error")]
 pub struct FlatFileTrackerError;
 
-pub struct FlatFileTracker {
-    db: PathBuf,
-    lockfile: PathBuf,
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 struct LockfileData {
     start_time: StartTime,
@@ -38,6 +33,11 @@ impl FlatFileDatabase {
     fn push(&mut self, record: TimeRecord) {
         self.records.push(record);
     }
+}
+
+pub struct FlatFileTracker {
+    db: PathBuf,
+    lockfile: PathBuf,
 }
 
 impl FlatFileTracker {
@@ -220,7 +220,7 @@ mod tests {
         let tracker = new_flat_file_tracker(&db, &lockfile);
         tracker.start().unwrap();
 
-        // Whent the tracker is stopped
+        // When the tracker is stopped
         tracker.stop().unwrap();
 
         // Then a record is created
