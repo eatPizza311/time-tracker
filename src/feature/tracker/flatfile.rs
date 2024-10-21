@@ -12,6 +12,7 @@ use std::{
 
 use error_stack::{Result, ResultExt};
 use serde::{Deserialize, Serialize};
+use tracing::instrument::WithSubscriber;
 
 use crate::feature::tracker::{EndTime, StartTime, TimeRecord};
 
@@ -35,6 +36,14 @@ impl FlatFileDatabase {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StartupStatus {
+    /// Time tracker started
+    Started,
+    /// Time tracker already running
+    Running,
+}
+
 pub struct FlatFileTracker {
     db: PathBuf,
     lockfile: PathBuf,
@@ -51,7 +60,7 @@ impl FlatFileTracker {
         Self { db, lockfile }
     }
 
-    fn start(&self) -> Result<(), FlatFileTrackerError> {
+    fn start(&self) -> Result<StartupStatus, FlatFileTrackerError> {
         let lockfile_data = {
             let start_time = StartTime::now();
             let data = LockfileData { start_time };
@@ -60,17 +69,19 @@ impl FlatFileTracker {
                 .attach_printable("failed to serialize lockfile data")?
         };
 
-        OpenOptions::new()
+        let file = OpenOptions::new()
             .write(true)
             .create_new(true)
-            .open(&self.lockfile)
-            .change_context(FlatFileTrackerError)
-            .attach_printable("unable to create new lockfile when start tracking")?
-            .write_all(lockfile_data.as_bytes())
-            .change_context(FlatFileTrackerError)
-            .attach_printable("failed to write lockfile data")?;
+            .open(&self.lockfile);
 
-        Ok(())
+        if let Ok(mut file) = file {
+            file.write_all(lockfile_data.as_bytes())
+                .change_context(FlatFileTrackerError)
+                .attach_printable("failed to write lockfile data")?;
+            Ok(StartupStatus::Started)
+        } else {
+            Ok(StartupStatus::Running)
+        }
     }
 
     fn stop(&self) -> Result<(), FlatFileTrackerError> {
@@ -167,8 +178,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::{thread, time::Duration};
-
     use assert_fs::{fixture::ChildPath, prelude::PathChild, TempDir};
 
     use super::*;
@@ -226,5 +235,32 @@ mod tests {
         // Then a record is created
         // Iter<Record>
         assert!(tracker.records().unwrap().next().is_some());
+    }
+
+    #[test]
+    fn initial_start_return_started_state() {
+        // Given a new tracker
+        let (_temp, db, lockfile) = temp_paths();
+        let tracker = new_flat_file_tracker(&db, &lockfile);
+
+        // When the tracker is started
+        let started = tracker.start().unwrap();
+
+        // Then the `started` state is returned
+        assert_eq!(started, StartupStatus::Started);
+    }
+
+    #[test]
+    fn multiple_starts_return_already_running_state() {
+        // Given a running tracker
+        let (_temp, db, lockfile) = temp_paths();
+        let tracker = new_flat_file_tracker(&db, &lockfile);
+        tracker.start().unwrap();
+
+        // When the tracker is started again
+        let started = tracker.start().unwrap();
+
+        // Then the `already_running` state is returned
+        assert_eq!(started, StartupStatus::Running);
     }
 }
