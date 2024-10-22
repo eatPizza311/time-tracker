@@ -12,9 +12,10 @@ use std::{
 
 use error_stack::{Result, ResultExt};
 use serde::{Deserialize, Serialize};
-use tracing::instrument::WithSubscriber;
 
-use crate::feature::tracker::{EndTime, StartTime, TimeRecord};
+use crate::feature::tracker::{
+    EndTime, StartTime, StartupStatus, TimeRecord, Tracker, TrackerError,
+};
 
 #[derive(Debug, thiserror::Error)]
 #[error("filesystem tracker error")]
@@ -36,14 +37,6 @@ impl FlatFileDatabase {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum StartupStatus {
-    /// Time tracker started
-    Started,
-    /// Time tracker already running
-    Running,
-}
-
 pub struct FlatFileTracker {
     db: PathBuf,
     lockfile: PathBuf,
@@ -60,7 +53,7 @@ impl FlatFileTracker {
         Self { db, lockfile }
     }
 
-    fn start(&self) -> Result<StartupStatus, FlatFileTrackerError> {
+    fn start_impl(&self) -> Result<StartupStatus, FlatFileTrackerError> {
         let lockfile_data = {
             let start_time = StartTime::now();
             let data = LockfileData { start_time };
@@ -84,14 +77,10 @@ impl FlatFileTracker {
         }
     }
 
-    fn stop(&self) -> Result<(), FlatFileTrackerError> {
-        // 1. read the time from lockfile
+    fn stop_impl(&self) -> Result<(), FlatFileTrackerError> {
         let start = read_lockfile(&self.lockfile)?.start_time;
-        // 2. get end time
         let end = EndTime::now();
-        // 3. create record
         let record = TimeRecord { start, end };
-        // 4. save record to database
         let mut db = load_database(&self.db)?;
         db.push(record);
         save_database(&self.db, &db)?;
@@ -101,15 +90,23 @@ impl FlatFileTracker {
             .attach_printable("unable to delete lockfile")?;
         Ok(())
     }
+}
+
+impl Tracker for FlatFileTracker {
+    fn start(&self) -> Result<StartupStatus, TrackerError> {
+        self.start_impl().change_context(TrackerError)
+    }
+
+    fn stop(&self) -> Result<(), TrackerError> {
+        self.stop_impl().change_context(TrackerError)
+    }
 
     fn is_running(&self) -> bool {
         self.lockfile.exists()
     }
 
-    fn records(&self) -> Result<impl Iterator<Item = TimeRecord>, FlatFileTrackerError> {
-        // 1. load records
-        let db = load_database(&self.db)?;
-        // 2. return Iterator
+    fn records(&self) -> Result<impl Iterator<Item = TimeRecord>, TrackerError> {
+        let db = load_database(&self.db).change_context(TrackerError)?;
         Ok(db.records.into_iter())
     }
 }
@@ -171,9 +168,9 @@ where
         .change_context(FlatFileTrackerError)
         .attach_printable("failed to open lockfile")?;
 
-    Ok(serde_json::from_reader(file)
+    serde_json::from_reader(file)
         .change_context(FlatFileTrackerError)
-        .attach_printable("failed to deserialize lockfile")?)
+        .attach_printable("failed to deserialize lockfile")
 }
 
 #[cfg(test)]
