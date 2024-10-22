@@ -28,7 +28,7 @@ pub struct TimeRecord {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum StartupStatus {
+pub enum StartupStatus {
     /// Time tracker started
     Started,
     /// Time tracker already running
