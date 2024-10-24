@@ -1,13 +1,13 @@
 use std::time::Duration;
 
 #[derive(Debug, Default)]
-pub struct HourMinSecFormater;
+pub struct HourMinSecFormatter;
 
-trait DurationFormater {
+pub trait DurationFormatter {
     fn format(&self, duration: Duration) -> String;
 }
 
-impl DurationFormater for HourMinSecFormater {
+impl DurationFormatter for HourMinSecFormatter {
     fn format(&self, duration: Duration) -> String {
         let duration_in_sec = duration.as_secs();
         let seconds = duration_in_sec % 60;
@@ -28,9 +28,9 @@ mod tests {
     fn format_seconds() {
         let duration = Duration::from_secs(5);
 
-        let formater = HourMinSecFormater::default();
+        let formatter = HourMinSecFormatter::default();
 
-        let text = formater.format(duration);
+        let text = formatter.format(duration);
 
         assert_eq!(&text, "00:00:05");
     }
@@ -39,9 +39,9 @@ mod tests {
     fn format_three_hours_eleven_minute() {
         let duration = Duration::from_secs(11460);
 
-        let formater = HourMinSecFormater::default();
+        let formatter = HourMinSecFormatter::default();
 
-        let text = formater.format(duration);
+        let text = formatter.format(duration);
 
         assert_eq!(&text, "03:11:00");
     }
