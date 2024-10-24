@@ -6,7 +6,7 @@ use error_stack::{Result, ResultExt};
 use crate::feature::tracker::Tracker;
 
 #[derive(Debug, Clone, Copy)]
-enum ReportTimespan {
+pub enum ReportTimespan {
     Last(Duration),
 }
 

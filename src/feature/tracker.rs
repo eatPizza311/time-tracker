@@ -1,9 +1,12 @@
+mod flatfile;
+mod reporter;
+
 use chrono::{DateTime, Utc};
 use error_stack::Result;
 use serde::{Deserialize, Serialize};
 
-mod flatfile;
-mod reporter;
+pub use flatfile::FlatFileTracker;
+pub use reporter::{ReportTimespan, Reporter, ReporterError};
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct StartTime(DateTime<Utc>);
