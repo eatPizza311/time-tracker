@@ -19,7 +19,9 @@ pub struct CliError;
 pub enum Command {
     /// Start tracking time
     Start,
+    /// Stop tracking time
     Stop,
+    /// Show the total tracking time within 24 hours
     Report,
 }
 
