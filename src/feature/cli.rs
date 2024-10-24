@@ -48,6 +48,10 @@ pub fn run() -> Result<(), CliError> {
             Ok(StartupStatus::Running) => println!("tracker already running"),
             Err(e) => return Err(e).change_context(CliError),
         },
+        Command::Stop => tracker
+            .stop()
+            .change_context(CliError)
+            .attach_printable("failed to stop tracking")?,
     }
 
     Ok(())

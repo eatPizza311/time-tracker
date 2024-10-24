@@ -39,12 +39,19 @@ fn start_command_starts_tracking_time() -> TestResult {
 
 #[test]
 fn stop_command_stop_tracking_time() -> TestResult {
-    Command::cargo_bin("track")?.arg("start").assert().success();
-    Command::cargo_bin("track")?.arg("stop").assert().success();
+    let (_temp, db, lockfile) = temp_paths();
+    start_tracking(&db, &lockfile)?;
 
-    todo!("");
+    Command::cargo_bin("track")?
+        .arg("--db-dir")
+        .arg(db.to_path_buf())
+        .arg("--lockfile")
+        .arg(lockfile.to_path_buf())
+        .arg("stop")
+        .assert()
+        .success();
 
-    #[allow(unreachable_code)]
+    assert!(!lockfile.to_path_buf().exists());
     Ok(())
 }
 
