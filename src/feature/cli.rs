@@ -1,11 +1,14 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 
 use clap::{Parser, Subcommand};
 use error_stack::{Result, ResultExt};
 
 use crate::{
     error::Suggestion,
-    feature::tracker::{FlatFileTracker, StartupStatus, Tracker},
+    feature::{
+        report_fmt::{DurationFormatter, HourMinSecFormatter},
+        tracker::{FlatFileTracker, ReportTimespan, Reporter, StartupStatus, Tracker},
+    },
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -17,7 +20,7 @@ pub enum Command {
     /// Start tracking time
     Start,
     Stop,
-    // Report,
+    Report,
 }
 
 // track --db-dir PATH --lockfile PATH start
@@ -52,6 +55,18 @@ pub fn run() -> Result<(), CliError> {
             .stop()
             .change_context(CliError)
             .attach_printable("failed to stop tracking")?,
+        Command::Report => {
+            let twenty_four_hours = {
+                const TWENTY_FOUR_HOURS: u64 = 60 * 60 * 24;
+                Duration::from_secs(TWENTY_FOUR_HOURS)
+            };
+            let total_duration = tracker
+                .total_duration(ReportTimespan::Last(twenty_four_hours))
+                .change_context(CliError)
+                .attach_printable("failed to calculate total duration")?;
+            let formatter = HourMinSecFormatter::default();
+            println!("{}", formatter.format(total_duration));
+        }
     }
 
     Ok(())

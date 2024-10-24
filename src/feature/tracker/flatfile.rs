@@ -14,7 +14,7 @@ use error_stack::{Result, ResultExt};
 use serde::{Deserialize, Serialize};
 
 use crate::feature::tracker::{
-    EndTime, StartTime, StartupStatus, TimeRecord, Tracker, TrackerError,
+    EndTime, Reporter, StartTime, StartupStatus, TimeRecord, Tracker, TrackerError,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -110,6 +110,8 @@ impl Tracker for FlatFileTracker {
         Ok(db.records.into_iter())
     }
 }
+
+impl Reporter for FlatFileTracker {}
 
 fn save_database<P>(path: P, db: &FlatFileDatabase) -> Result<(), FlatFileTrackerError>
 where
